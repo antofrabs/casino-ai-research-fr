@@ -8,6 +8,7 @@ Permette interazione diretta con il browser del casino
 """
 import streamlit as st
 import sys
+import os
 from pathlib import Path
 import time
 import random
