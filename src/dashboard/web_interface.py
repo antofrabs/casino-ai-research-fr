@@ -548,7 +548,15 @@ def step5_auto_pilot():
         st.success("🆓 **Sito Play Money** - Avvio browser senza login")
         st.info("💡 Il browser si aprirà direttamente sul gioco")
         
-        if st.button("🌐 Avvia Browser e Gioca", type="primary", use_container_width=True):
+        # Verifica se siamo su Streamlit Cloud
+        is_streamlit_cloud = os.environ.get('STREAMLIT_CLOUD', False) or 'streamlit.app' in os.environ.get('STREAMLIT_SERVER_URL', '')
+        
+        if is_streamlit_cloud:
+            st.warning("⚠️ **Streamlit Cloud**: L'automazione del browser non è disponibile su Streamlit Cloud.")
+            st.info("💡 Usa l'**Editor di Codice** nella sidebar per modificare il codice direttamente online!")
+            st.info("🌐 Per l'automazione del browser, esegui l'app localmente o su un server con Playwright installato.")
+        
+        if st.button("🌐 Avvia Browser e Gioca", type="primary", use_container_width=True, disabled=is_streamlit_cloud):
             with st.spinner("🌐 Avvio browser..."):
                 try:
                     # Verifica Playwright prima di importare
@@ -558,7 +566,8 @@ def step5_auto_pilot():
                     except ImportError:
                         playwright_available = False
                         st.error("❌ Playwright non trovato!")
-                        st.code("pip install playwright\npython3 -m playwright install chromium", language="bash")
+                        st.info("💡 Su Streamlit Cloud, l'automazione del browser non è disponibile.")
+                        st.info("💡 Usa l'**Editor di Codice** nella sidebar per modificare il codice!")
                         return
                     
                     from src.automation.browser_controller import CasinoBrowserController
