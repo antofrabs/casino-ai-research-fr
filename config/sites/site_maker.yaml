@@ -1,0 +1,40 @@
+# Configurazione per il TUO sito maker
+# ===============================================================
+
+name: "Site Maker Casino"
+url: "https://tuo-sito-maker.com"  # SOSTITUIRE con URL reale
+
+# Login selectors (da adattare al tuo sito)
+login:
+  email_selector: "input[name='email']"
+  password_selector: "input[name='password']"
+  submit_selector: "button[type='submit']"
+  balance_selector: ".user-balance"
+
+# Games available
+games:
+  blackjack:
+    enabled: true
+    table_selector: ".blackjack-table"
+    bet_selector: ".bet-input"
+    actions:
+      hit: ".hit-btn"
+      stand: ".stand-btn"
+      double: ".double-btn"
+      split: ".split-btn"
+  
+  roulette:
+    enabled: true
+    table_selector: ".roulette-table"
+  
+  baccarat:
+    enabled: false
+
+# AI Configuration for this site
+ai_settings:
+  default_bet: 10
+  max_bet: 500
+  min_bet: 5
+  enable_auto_play: true
+  screenshot_on_error: true
+

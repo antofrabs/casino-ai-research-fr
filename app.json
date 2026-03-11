@@ -1,0 +1,37 @@
+{
+  "name": "Casino AI Research Platform",
+  "description": "Piattaforma di ricerca AI per analisi di giochi casino",
+  "repository": "https://github.com/tuonome/casino-ai-research",
+  "logo": "https://via.placeholder.com/150",
+  "keywords": [
+    "casino",
+    "ai",
+    "research",
+    "streamlit",
+    "playwright",
+    "blackjack"
+  ],
+  "buildpacks": [
+    {
+      "url": "heroku/python"
+    }
+  ],
+  "env": {
+    "PYTHONUNBUFFERED": {
+      "description": "Disabilita buffering Python",
+      "value": "1"
+    },
+    "STREAMLIT_SERVER_HEADLESS": {
+      "description": "Modalità headless per Streamlit",
+      "value": "true"
+    }
+  },
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "standard-1x"
+    }
+  },
+  "addons": []
+}
+

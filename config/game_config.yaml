@@ -1,0 +1,139 @@
+# Casino AI - Game Configuration
+# ===============================================================
+
+games:
+  blackjack:
+    # Deck configuration
+    decks: 6
+    penetration: 0.75  # Reshuffle when 75% of cards used
+    cut_card_position: 78  # Cards from end to reshuffle
+    
+    # Game rules
+    blackjack_payout: 1.5      # 3:2 payout
+    dealer_hits_soft_17: true  # Dealer hits on soft 17
+    double_after_split: true   # Can double after split
+    resplit_aces: false        # Can resplit aces
+    resplit_limit: 3           # Max splits per hand
+    late_surrender: true       # Allow late surrender
+    
+    # Betting rules
+    min_bet: 10
+    max_bet: 500
+    table_limit: 5000
+    
+    # Allowed actions
+    allowed_actions:
+      - hit
+      - stand
+      - double
+      - split
+      - surrender
+      - insurance
+      - even_money
+
+  roulette:
+    # Wheel type
+    type: "european"  # european (37) or american (38)
+    numbers: 37        # 0-36 for european
+    
+    # Special bets
+    special_bets:
+      - red
+      - black
+      - even
+      - odd
+      - dozen1
+      - dozen2
+      - dozen3
+      - column1
+      - column2
+      - column3
+      - low (1-18)
+      - high (19-36)
+    
+    # Payouts
+    payouts:
+      straight: 35    # Single number
+      split: 17       # Two numbers
+      street: 11      # Three numbers
+      corner: 8       # Four numbers
+      line: 5         # Six numbers
+      dozen: 2        # Dozen/Column
+      even_money: 1   # Red/Black, Even/Odd, High/Low
+
+  baccarat:
+    commission: 0.05  # 5% commission on banker wins
+    tie_payout: 8
+    dragon_bonus: true
+    pair_side_bets: true
+
+# AI Strategy configurations
+ai_strategies:
+  blackjack:
+    # Counting systems
+    counting_systems:
+      - hi-lo      # High-Low: +1 for 2-6, -1 for 10-A
+      - omega-ii   # Omega II: More complex
+      - zen        # Zen Count: Different weights
+      - halves     # Halves: Fractional counts
+      - ko         # Knock-Out: Unbalanced
+    
+    # Betting strategy
+    bet_spread: [1, 2, 4, 8, 12, 16]  # Bet multipliers based on count
+    min_bet: 10
+    max_bet: 500
+    unit_size: 10
+    true_count_divisor: "remaining_decks"  # Divide running count by decks remaining
+    
+    # Risk management
+    risk_of_ruin: 0.01   # 1% risk of ruin target
+    kelly_fraction: 0.5  # Fraction of Kelly criterion
+    stop_loss: 0.2       # Stop at 20% loss
+    stop_win: 0.3        # Stop at 30% win
+
+  roulette:
+    # Betting systems
+    strategies:
+      - martingale   # Double after loss
+      - fibonacci    # Fibonacci sequence
+      - d_alembert   # Increase/decrease by 1
+      - labouchere   # List-based system
+      - paroli       # Double after win
+      - 1326         # 1-3-2-6 system
+    
+    # Progression limits
+    progression_limit: 10  # Max progression steps
+    base_bet: 10
+    table_limit: 1000
+
+# Bankroll Management
+bankroll_management:
+  initial_bankroll: 10000
+  risk_per_bet: 0.01      # 1% of bankroll per bet
+  kelly_fraction: 0.5     # Fraction of Kelly
+  session_stop_loss: 0.2  # Stop session at -20%
+  session_stop_win: 0.3   # Stop session at +30%
+  daily_loss_limit: 0.4   # Daily loss limit -40%
+  daily_win_limit: 0.5    # Daily win limit +50%
+  weekly_loss_limit: 0.6  # Weekly loss limit -60%
+
+# Browser Automation
+automation:
+  browser: "chromium"  # chromium, firefox, webkit
+  headless: false      # Show browser window
+  slow_mo: 100         # ms delay between actions
+  timeout: 30000       # ms timeout for actions
+  viewport:            # Browser window size
+    width: 1920
+    height: 1080
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+  screenshot_on_error: true
+  log_level: "INFO"
+
+# Performance Settings
+performance:
+  max_concurrent_simulations: 4
+  cache_simulations: true
+  save_interval: 100  # Save progress every N hands
+  compression: true   # Compress saved data
+

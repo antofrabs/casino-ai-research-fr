@@ -1,0 +1,98 @@
+# Siti di Blackjack con Soldi Falsi (Play Money)
+# ===============================================================
+
+sites:
+  - name: "247 Blackjack"
+    url: "https://www.247blackjack.com"
+    description: "Blackjack gratuito online - Play Money"
+    requires_login: false
+    play_money: true
+    game_type: "blackjack"
+    selectors:
+      # Pulsante Play principale (sulla homepage)
+      play_button: "a:has-text('Play 247 Blackjack'), a[href*='play'], button:has-text('Play'), .play-button"
+      # Pulsante Deal per iniziare una mano
+      deal_button: "button:has-text('Deal'), .deal, [data-action='deal']"
+      # Chips per puntare
+      chip_selectors: ".chip, [data-chip], button.chip"
+      bet_input: "input.bet, .bet-amount, [data-bet]"
+      # Azioni di gioco
+      hit_button: "button:has-text('Hit'), .hit, [data-action='hit']"
+      stand_button: "button:has-text('Stand'), .stand, [data-action='stand']"
+      double_button: "button:has-text('Double'), .double, [data-action='double']"
+      split_button: "button:has-text('Split'), .split, [data-action='split']"
+      balance_display: ".balance, .chips, .money, .credits, .virtual-money"
+      new_game: ".new-game, .deal, [data-action='deal'], button:has-text('Deal')"
+  
+  - name: "Blackjack.org"
+    url: "https://www.blackjack.org"
+    description: "Simulatore Blackjack gratuito"
+    requires_login: false
+    play_money: true
+    game_type: "blackjack"
+    selectors:
+      play_button: ".play-btn, button.start"
+      bet_input: ".bet-input, input[type='number']"
+      hit_button: ".hit-btn, button.hit"
+      stand_button: ".stand-btn, button.stand"
+      double_button: ".double-btn, button.double"
+      split_button: ".split-btn, button.split"
+      balance_display: ".balance, .chips"
+      new_game: ".new-game, .deal-btn"
+  
+  - name: "Casino.org Blackjack"
+    url: "https://www.casino.org/blackjack/"
+    description: "Blackjack gratuito - Modalità Demo"
+    requires_login: false
+    play_money: true
+    game_type: "blackjack"
+    selectors:
+      play_button: ".play-demo, .start-game"
+      bet_input: ".bet-amount, input.bet"
+      hit_button: ".hit, button[data-action='hit']"
+      stand_button: ".stand, button[data-action='stand']"
+      double_button: ".double, button[data-action='double']"
+      split_button: ".split, button[data-action='split']"
+      balance_display: ".balance, .demo-balance"
+      new_game: ".new-hand, .deal"
+  
+  - name: "CardGames.io Blackjack"
+    url: "https://cardgames.io/blackjack/"
+    description: "Blackjack online gratuito"
+    requires_login: false
+    play_money: true
+    game_type: "blackjack"
+    selectors:
+      play_button: ".new-game, button.new"
+      bet_input: ".bet, input.bet-amount"
+      hit_button: ".hit, button.hit"
+      stand_button: ".stand, button.stand"
+      double_button: ".double, button.double"
+      split_button: ".split, button.split"
+      balance_display: ".money, .balance"
+      new_game: ".new-game, .deal"
+  
+  - name: "World of Card Games - Blackjack"
+    url: "https://worldofcardgames.com/blackjack"
+    description: "Blackjack gratuito con soldi virtuali"
+    requires_login: false
+    play_money: true
+    game_type: "blackjack"
+    selectors:
+      play_button: ".play, .start"
+      bet_input: ".bet-input, input.bet"
+      hit_button: ".hit-btn, button.hit"
+      stand_button: ".stand-btn, button.stand"
+      double_button: ".double-btn, button.double"
+      split_button: ".split-btn, button.split"
+      balance_display: ".balance, .chips"
+      new_game: ".new-hand, .deal"
+
+# Note importanti
+notes:
+  - "Questi siti usano SOLO soldi falsi/virtuali"
+  - "Non è necessario registrarsi o fare login"
+  - "Perfetti per testare l'AI senza rischi"
+  - "I selettori CSS potrebbero variare - potrebbero essere necessari aggiustamenti"
+
+

@@ -1,0 +1,31 @@
+# 🎰 Casino AI Research Platform - Cloud Dependencies (Ottimizzato)
+# ===============================================================
+# Versione leggera per deploy cloud (senza ML pesanti se non necessari)
+
+# Core Data Science (essenziali)
+numpy>=1.24.0
+pandas>=2.0.0
+matplotlib>=3.7.0
+
+# Dashboard & Web Interface (ESSENZIALE)
+streamlit>=1.25.0
+streamlit-ace>=0.1.1
+plotly>=5.15.0
+
+# Browser Automation (ESSENZIALE)
+playwright>=1.35.0
+beautifulsoup4>=4.12.0
+
+# Utilities (ESSENZIALI)
+python-dotenv>=1.0.0
+pyyaml>=6.0
+click>=8.1.0
+tqdm>=4.65.0
+loguru>=0.7.0
+
+# Computer Vision (per OCR se necessario)
+Pillow>=10.0.0
+
+# Web Server
+gunicorn>=21.2.0
+

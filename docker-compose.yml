@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  # AI Engine API
+  ai-engine:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.ai
+    image: casino-ai/engine:latest
+    container_name: casino-ai-engine
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./config:/app/config
+      - ./logs:/app/logs
+    environment:
+      - ENVIRONMENT=production
+      - LOG_LEVEL=INFO
+    env_file:
+      - .env
+    networks:
+      - casino-network
+    restart: unless-stopped
+
+  # Web Dashboard
+  dashboard:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.dashboard
+    image: casino-ai/dashboard:latest
+    container_name: casino-ai-dashboard
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./data:/app/data
+      - ./src/dashboard:/app/dashboard
+    environment:
+      - API_URL=http://ai-engine:5000
+      - STREAMLIT_SERVER_PORT=8501
+      - STREAMLIT_SERVER_ADDRESS=0.0.0.0
+    depends_on:
+      - ai-engine
+    networks:
+      - casino-network
+    restart: unless-stopped
+
+  # Browser Automation Service
+  automation:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.automation
+    image: casino-ai/automation:latest
+    container_name: casino-ai-automation
+    volumes:
+      - ./data/logs:/app/logs
+      - ./config:/app/config
+      - /dev/shm:/dev/shm  # Shared memory for browser
+    environment:
+      - DISPLAY=:99
+      - HEADLESS=true
+      - BROWSER=chromium
+    depends_on:
+      - ai-engine
+    networks:
+      - casino-network
+    restart: on-failure
+
+networks:
+  casino-network:
+    driver: bridge
+
+volumes:
+  casino-data:
+    driver: local
+
