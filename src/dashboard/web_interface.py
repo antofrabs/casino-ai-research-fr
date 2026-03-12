@@ -24,6 +24,15 @@ from src.ai.decision_maker import AIDecisionMaker
 # Logger
 logger = get_logger("web_interface")
 
+# Flag disponibilità Playwright (controllo silenzioso, senza errori a schermo)
+try:
+    from playwright.sync_api import sync_playwright  # type: ignore
+
+    PLAYWRIGHT_AVAILABLE = True
+except Exception:
+    PLAYWRIGHT_AVAILABLE = False
+    logger.info("Playwright non disponibile in questo ambiente; l'automazione browser verrà disabilitata.")
+
 # Rilevazione ambiente Streamlit Cloud
 IS_STREAMLIT_CLOUD = bool(
     os.environ.get("STREAMLIT_CLOUD")
@@ -370,36 +379,30 @@ def step2_credentials():
                 st.error("❌ Inserisci email e password")
                 return
 
-            # Su Streamlit Cloud: niente Playwright, salviamo solo le credenziali e procediamo
-            if IS_STREAMLIT_CLOUD:
-                st.warning("⚠️ Su Streamlit Cloud non è possibile usare Playwright per il login reale.")
-                st.info("💡 Continuiamo in **modalità manuale**: il login verrà gestito direttamente da te nel sito.")
-                logger.info("Credenziali salvate in modalità cloud senza verifica Playwright per %s", st.session_state.site_url)
+            # Su Streamlit Cloud o se Playwright non è disponibile: niente login automatico
+            if IS_STREAMLIT_CLOUD or not PLAYWRIGHT_AVAILABLE:
+                st.warning("⚠️ In questo ambiente il login automatico non è disponibile.")
+                st.info("💡 Continuiamo in **modalità manuale/demo**: il login lo gestisci tu dal sito.")
+                logger.info(
+                    "Credenziali salvate senza login automatico (cloud=%s, playwright=%s) per %s",
+                    IS_STREAMLIT_CLOUD,
+                    PLAYWRIGHT_AVAILABLE,
+                    st.session_state.site_url,
+                )
                 st.session_state.credentials = {
                     'email': email,
                     'password': password,
                     'site_url': st.session_state.site_url,
                     'demo_mode': True,
-                    'cloud_mode': True,
+                    'cloud_mode': IS_STREAMLIT_CLOUD,
                 }
                 st.session_state.step = 3
                 st.rerun()
                 return
 
-            # Ambiente locale: prova login reale con Playwright
+            # Ambiente locale con Playwright disponibile: prova login reale
             with st.spinner("🔐 Verifica credenziali in corso..."):
                 try:
-                    # Verifica Playwright prima
-                    try:
-                        from playwright.sync_api import sync_playwright  # type: ignore
-                        playwright_ok = True
-                    except ImportError as e:
-                        playwright_ok = False
-                        st.error("❌ Playwright non installato!")
-                        st.code("pip install playwright\npython3 -m playwright install chromium", language="bash")
-                        logger.error("Playwright non installato per login: %s", e)
-                        return
-
                     from src.automation.browser_controller import CasinoBrowserController
 
                     # Avvia browser (visibile, non headless)
@@ -407,8 +410,6 @@ def step2_credentials():
 
                     if not controller.start_browser():
                         st.error("❌ Impossibile avviare il browser.")
-                        st.info("💡 Verifica che Playwright sia installato:")
-                        st.code("pip install playwright\npython3 -m playwright install chromium", language="bash")
                         logger.error("Impossibile avviare il browser per il login")
                         if 'controller' in locals():
                             controller.close()
@@ -445,7 +446,6 @@ def step2_credentials():
 
                 except Exception as e:
                     st.error(f"❌ Errore durante il login: {str(e)}")
-                    st.info("💡 Assicurati che Playwright sia installato: pip install playwright && playwright install chromium")
                     logger.exception("Errore durante il login con Playwright")
 
 def step3_select_game():
@@ -592,57 +592,49 @@ def step5_auto_pilot():
         if st.button("🚀 Avvia Simulazione Demo", type="primary", use_container_width=True):
             _run_demo_simulation()
     elif play_money:
-        # Sito play money - avvia browser senza login (solo locale)
-        st.success("🆓 **Sito Play Money** - Avvio browser senza login (solo in esecuzione locale)")
-        st.info("💡 Il browser si aprirà direttamente sul gioco sul tuo computer.")
+        # Sito play money - avvio browser solo se Playwright è disponibile (ambiente locale)
+        st.success("🆓 **Sito Play Money** - per test con soldi virtuali.")
+        if not PLAYWRIGHT_AVAILABLE:
+            st.warning("⚠️ L'automazione del browser non è disponibile in questo ambiente.")
+            st.info("💡 Apri il sito direttamente dal tuo browser e gioca manualmente.")
+        else:
+            st.info("💡 In esecuzione locale, il browser si aprirà direttamente sul gioco.")
 
-        if st.button("🌐 Avvia Browser e Gioca", type="primary", use_container_width=True):
+        if PLAYWRIGHT_AVAILABLE and st.button("🌐 Avvia Browser e Gioca", type="primary", use_container_width=True):
             with st.spinner("🌐 Avvio browser..."):
                 try:
-                    # Verifica Playwright prima di importare
-                    try:
-                        from playwright.sync_api import sync_playwright
-                        playwright_available = True
-                    except ImportError:
-                        playwright_available = False
-                        st.error("❌ Playwright non trovato!")
-                        st.info("💡 Su Streamlit Cloud, l'automazione del browser non è disponibile.")
-                        st.info("💡 Usa l'**Editor di Codice** nella sidebar per modificare il codice!")
-                        return
-                    
                     from src.automation.browser_controller import CasinoBrowserController
-                    
+
                     # Avvia browser (visibile, non headless)
                     controller = CasinoBrowserController(headless=False, slow_mo=200)
-                    
+
                     if not controller.start_browser():
                         st.error("❌ Impossibile avviare il browser.")
-                        st.info("💡 Verifica che Playwright sia installato correttamente:")
-                        st.code("pip install playwright\npython3 -m playwright install chromium", language="bash")
+                        logger.error("Impossibile avviare il browser per play money")
                         return
-                    
+
                     # Naviga direttamente al sito (senza login)
                     controller.page.goto(st.session_state.site_url, timeout=30000)
                     time.sleep(3)
-                    
+
                     # Cerca e clicca il pulsante Play se presente
                     site_config = st.session_state.get('site_config', None)
                     if controller.click_play_button(site_config):
                         st.success("✅ Pulsante Play cliccato! Gioco avviato.")
                     else:
                         st.info("💡 Pulsante Play non trovato - potrebbe essere già nel gioco o richiedere click manuale")
-                    
+
                     st.session_state.browser_controller = controller
                     st.session_state.initial_balance = 0  # Play money, balance non reale
-                    
+
                     st.success("✅ Browser avviato! Guarda la finestra del browser.")
                     st.rerun()
-                    
+
                 except Exception as e:
                     st.error(f"❌ Errore: {str(e)}")
-                    st.info("💡 Assicurati che Playwright sia installato: pip install playwright && playwright install chromium")
-        
-        if controller:
+                    logger.exception("Errore avvio browser play money")
+
+        if controller and PLAYWRIGHT_AVAILABLE:
             _show_interactive_mode(controller)
     else:
         if controller is None:
