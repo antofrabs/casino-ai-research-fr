@@ -572,25 +572,31 @@ def step5_auto_pilot():
     demo_mode = st.session_state.credentials.get('demo_mode', False)
     play_money = st.session_state.get('play_money', False)
     controller = st.session_state.get('browser_controller', None)
+
+    # 🌐 Comportamento speciale su Streamlit Cloud: niente Playwright / browser reale
+    if IS_STREAMLIT_CLOUD:
+        st.warning("⚠️ L'automazione del browser non è disponibile su Streamlit Cloud.")
+        st.info("💡 Qui puoi usare **solo la simulazione demo** e modificare il codice con l'**Editor** nella sidebar.")
+
+        if demo_mode or play_money:
+            if st.button("🚀 Avvia Simulazione Demo", type="primary", use_container_width=True):
+                logger.info("Avvio simulazione demo su Streamlit Cloud (demo_mode=%s, play_money=%s)", demo_mode, play_money)
+                _run_demo_simulation()
+        else:
+            st.info("💡 Per testare l'AI, attiva la **modalità Demo** allo step delle credenziali.")
+
+        return
     
     if demo_mode:
         st.warning("⚠️ Modalità Demo: verrà eseguita una simulazione")
         if st.button("🚀 Avvia Simulazione Demo", type="primary", use_container_width=True):
             _run_demo_simulation()
     elif play_money:
-        # Sito play money - avvia browser senza login
-        st.success("🆓 **Sito Play Money** - Avvio browser senza login")
-        st.info("💡 Il browser si aprirà direttamente sul gioco")
-        
-        # Verifica se siamo su Streamlit Cloud
-        is_streamlit_cloud = os.environ.get('STREAMLIT_CLOUD', False) or 'streamlit.app' in os.environ.get('STREAMLIT_SERVER_URL', '')
-        
-        if is_streamlit_cloud:
-            st.warning("⚠️ **Streamlit Cloud**: L'automazione del browser non è disponibile su Streamlit Cloud.")
-            st.info("💡 Usa l'**Editor di Codice** nella sidebar per modificare il codice direttamente online!")
-            st.info("🌐 Per l'automazione del browser, esegui l'app localmente o su un server con Playwright installato.")
-        
-        if st.button("🌐 Avvia Browser e Gioca", type="primary", use_container_width=True, disabled=is_streamlit_cloud):
+        # Sito play money - avvia browser senza login (solo locale)
+        st.success("🆓 **Sito Play Money** - Avvio browser senza login (solo in esecuzione locale)")
+        st.info("💡 Il browser si aprirà direttamente sul gioco sul tuo computer.")
+
+        if st.button("🌐 Avvia Browser e Gioca", type="primary", use_container_width=True):
             with st.spinner("🌐 Avvio browser..."):
                 try:
                     # Verifica Playwright prima di importare
