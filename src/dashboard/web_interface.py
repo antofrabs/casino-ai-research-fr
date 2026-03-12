@@ -12,11 +12,21 @@ import os
 from pathlib import Path
 import time
 import random
+from src.utils.logging_config import get_logger
 
 # Aggiungi src al path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from src.ai.decision_maker import AIDecisionMaker
+
+# Logger
+logger = get_logger("web_interface")
+
+# Rilevazione ambiente Streamlit Cloud
+IS_STREAMLIT_CLOUD = bool(
+    os.environ.get("STREAMLIT_CLOUD")
+    or "streamlit.app" in os.environ.get("STREAMLIT_SERVER_URL", "")
+)
 
 # Configurazione pagina
 st.set_page_config(
@@ -153,6 +163,19 @@ def main():
     # STEP 6: Withdraw
     elif st.session_state.step == 6:
         step6_withdraw()
+
+    # Editor di codice: ora sempre disponibile se flag attivo
+    if st.session_state.get("show_code_editor", False):
+        try:
+            from src.dashboard.code_editor import show_code_editor
+
+            show_code_editor()
+        except ImportError as e:
+            st.error("❌ Modulo code_editor non trovato")
+            logger.error("Modulo code_editor non trovato: %s", e)
+        except Exception as e:
+            st.error(f"❌ Errore editor: {e}")
+            logger.error("Errore in code editor: %s", e)
 
 def step1_select_site():
     """STEP 1: Selezione sito casino"""
@@ -341,86 +364,97 @@ def step2_credentials():
     
     with col3:
         if st.button("🔐 Verifica e Continua", type="primary", use_container_width=True):
-            if email and password:
-                # Verifica credenziali con login reale
-                with st.spinner("🔐 Verifica credenziali in corso..."):
-                    try:
-                        # Verifica Playwright prima
-                        try:
-                            from playwright.sync_api import sync_playwright
-                            playwright_ok = True
-                        except ImportError as e:
-                            playwright_ok = False
-                            st.error("❌ Playwright non installato!")
-                            st.code("pip install playwright\npython3 -m playwright install chromium", language="bash")
-                            return
-                        
-                        from src.automation.browser_controller import CasinoBrowserController
-                        
-                        # Avvia browser (visibile, non headless)
-                        controller = CasinoBrowserController(headless=False, slow_mo=200)
-                        
-                        if not controller.start_browser():
-                            st.error("❌ Impossibile avviare il browser.")
-                            st.info("💡 Verifica che Playwright sia installato:")
-                            st.code("pip install playwright\npython3 -m playwright install chromium", language="bash")
-                            if 'controller' in locals():
-                                controller.close()
-                            return
-                        
-                        # Prova login
-                        login_success = controller.login(
-                            st.session_state.site_url,
-                            {'email': email, 'password': password}
-                        )
-                        
-                        if login_success:
-                            # Salva credenziali e browser controller
-                            st.session_state.credentials = {
-                                'email': email,
-                                'password': password,
-                                'site_url': st.session_state.site_url,
-                                'demo_mode': False
-                            }
-                            st.session_state.browser_controller = controller
-                            st.session_state.initial_balance = controller.get_balance()
-                            
-                            st.success(f"✅ Login riuscito! Balance: ${controller.get_balance():.2f}")
-                            st.info("🌐 Il browser è aperto - puoi vedere il sito")
-                            st.session_state.step = 3
-                            time.sleep(2)
-                            st.rerun()
-                        else:
-                            controller.close()
-                            st.error("❌ Login fallito! Verifica che le credenziali siano corrette e che il sito sia raggiungibile.")
-                            st.info("💡 Suggerimento: Controlla il browser per vedere eventuali errori")
-                            
-                    except Exception as e:
-                        st.error(f"❌ Errore durante il login: {str(e)}")
-                        st.info("💡 Assicurati che Playwright sia installato: pip install playwright && playwright install chromium")
-            else:
+            if not email or not password:
                 st.error("❌ Inserisci email e password")
+                return
+
+            # Su Streamlit Cloud: niente Playwright, salviamo solo le credenziali e procediamo
+            if IS_STREAMLIT_CLOUD:
+                st.warning("⚠️ Su Streamlit Cloud non è possibile usare Playwright per il login reale.")
+                st.info("💡 Continuiamo in **modalità manuale**: il login verrà gestito direttamente da te nel sito.")
+                logger.info("Credenziali salvate in modalità cloud senza verifica Playwright per %s", st.session_state.site_url)
+                st.session_state.credentials = {
+                    'email': email,
+                    'password': password,
+                    'site_url': st.session_state.site_url,
+                    'demo_mode': True,
+                    'cloud_mode': True,
+                }
+                st.session_state.step = 3
+                st.rerun()
+                return
+
+            # Ambiente locale: prova login reale con Playwright
+            with st.spinner("🔐 Verifica credenziali in corso..."):
+                try:
+                    # Verifica Playwright prima
+                    try:
+                        from playwright.sync_api import sync_playwright  # type: ignore
+                        playwright_ok = True
+                    except ImportError as e:
+                        playwright_ok = False
+                        st.error("❌ Playwright non installato!")
+                        st.code("pip install playwright\npython3 -m playwright install chromium", language="bash")
+                        logger.error("Playwright non installato per login: %s", e)
+                        return
+
+                    from src.automation.browser_controller import CasinoBrowserController
+
+                    # Avvia browser (visibile, non headless)
+                    controller = CasinoBrowserController(headless=False, slow_mo=200)
+
+                    if not controller.start_browser():
+                        st.error("❌ Impossibile avviare il browser.")
+                        st.info("💡 Verifica che Playwright sia installato:")
+                        st.code("pip install playwright\npython3 -m playwright install chromium", language="bash")
+                        logger.error("Impossibile avviare il browser per il login")
+                        if 'controller' in locals():
+                            controller.close()
+                        return
+
+                    # Prova login
+                    login_success = controller.login(
+                        st.session_state.site_url,
+                        {'email': email, 'password': password}
+                    )
+
+                    if login_success:
+                        # Salva credenziali e browser controller
+                        st.session_state.credentials = {
+                            'email': email,
+                            'password': password,
+                            'site_url': st.session_state.site_url,
+                            'demo_mode': False
+                        }
+                        st.session_state.browser_controller = controller
+                        st.session_state.initial_balance = controller.get_balance()
+
+                        st.success(f"✅ Login riuscito! Balance: ${controller.get_balance():.2f}")
+                        st.info("🌐 Il browser è aperto - puoi vedere il sito")
+                        logger.info("Login riuscito su %s", st.session_state.site_url)
+                        st.session_state.step = 3
+                        time.sleep(2)
+                        st.rerun()
+                    else:
+                        controller.close()
+                        st.error("❌ Login fallito! Verifica che le credenziali siano corrette e che il sito sia raggiungibile.")
+                        st.info("💡 Suggerimento: Controlla il browser per vedere eventuali errori")
+                        logger.warning("Login fallito su %s", st.session_state.site_url)
+
+                except Exception as e:
+                    st.error(f"❌ Errore durante il login: {str(e)}")
+                    st.info("💡 Assicurati che Playwright sia installato: pip install playwright && playwright install chromium")
+                    logger.exception("Errore durante il login con Playwright")
 
 def step3_select_game():
-    """STEP 3: Selezione gioco"""
+    """STEP 3: Selezione gioco (solo Blackjack)"""
     st.markdown('<div class="step-box">', unsafe_allow_html=True)
     st.header("🎲 STEP 3: SELEZIONE GIOCO")
     st.markdown("</div>", unsafe_allow_html=True)
-    
-    games = {
-        "Blackjack": "🃏",
-        "Roulette": "🎡",
-        "Baccarat": "🎴",
-        "Poker": "🂡",
-        "Slot": "🎰"
-    }
-    
-    selected_game = st.radio(
-        "🎯 Quale gioco vuoi testare?",
-        options=list(games.keys()),
-        horizontal=True
-    )
-    
+
+    st.success("🃏 Questo ambiente è ottimizzato **solo per Blackjack**.")
+    selected_game = "Blackjack"
+
     st.session_state.game_config = {
         "name": selected_game,
         "type": selected_game.lower(),
@@ -428,12 +462,12 @@ def step3_select_game():
     }
     
     col1, col2 = st.columns([1, 1])
-    
+
     with col1:
         if st.button("◀️ Indietro", use_container_width=True):
             st.session_state.step = 2
             st.rerun()
-    
+
     with col2:
         if st.button("▶️ Continua", type="primary", use_container_width=True):
             st.session_state.step = 4
@@ -484,11 +518,8 @@ def step4_configure_ai():
     card_counting = st.checkbox(
         "🎴 Abilitare conteggio carte",
         value=True,
-        disabled=(st.session_state.game_config.get('name') != 'Blackjack')
+        disabled=False  # solo Blackjack è disponibile
     )
-    
-    if st.session_state.game_config.get('name') != 'Blackjack':
-        st.info("ℹ️ Il conteggio carte è disponibile solo per Blackjack")
     
     st.session_state.ai_config = {
         "mode": "auto_pilot",
@@ -1216,15 +1247,7 @@ def step6_withdraw():
         st.session_state.step = 1
         st.rerun()
     
-    # CODE EDITOR: Editor di codice (sempre disponibile)
-    if st.session_state.get('show_code_editor', False):
-        try:
-            from src.dashboard.code_editor import show_code_editor
-            show_code_editor()
-        except ImportError:
-            st.error("❌ Modulo code_editor non trovato")
-        except Exception as e:
-            st.error(f"❌ Errore editor: {e}")
+    # (L'editor di codice ora viene gestito globalmente in main())
 
 if __name__ == "__main__":
     main()
